@@ -1,0 +1,339 @@
+__version__ = '0.1'
+__author__ = 'blahdimir'
+
+import pygame
+import time
+
+pygame.init()
+pygame.font.init()
+
+FONT_NAME = 'calibri'
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+
+
+class Text():
+    """font name needs to be a string of system fonts
+    size of the text converted to int
+    text to draw
+    x_position of the text
+    y_position of the text
+    True or False for bold text
+    screen to draw the text
+    Getting the width of the screen
+    Getting the height of the screen
+    creating a font object"""
+    def __init__(self, text_size, text_to_draw, text_color, x_pos, y_pos, bold_text, screen_window):        
+        self.font_name = FONT_NAME
+        self.text_size = int(text_size)
+        self.text_to_draw = str(text_to_draw)
+        self.text_color = text_color
+        self.x_pos = x_pos
+        self.y_pos = y_pos
+        self.bold_text = bold_text
+        self.screen_window = screen_window
+        self.screen_w = pygame.display.get_surface().get_width()
+        self.screen_h = pygame.display.get_surface().get_height()
+        self.font = pygame.font.SysFont(self.font_name, self.text_size, self.bold_text)
+
+    #function to create the text object
+    def make_text(self):
+        """When called creates the text object to draw
+        Creating a variable to store the rectangle coordinates
+        returning both objects"""
+        text = self.font.render(self.text_to_draw, True, self.text_color)
+        text_rect = text.get_rect(topleft=(self.x_pos, self.y_pos))
+        return text, text_rect
+
+    #function to display the text on the screen window
+    def display_text(self):
+        """create a text_surface and a rectangle to display the text
+        displaying or blit on the text on screen_surface"""
+        text_surface, text_rectangle = self.make_text()
+        self.screen_window.blit(text_surface, text_rectangle)
+
+
+class InteractiveTextButton():
+    """size of the text
+    text to be drawn on the button
+    corner_radius
+    inactive_text_color (ex: not hovered)
+    active_text color (ex: when hoevered)    
+    inactive_background_color (ex: not hovered)
+    active_background_color (ex: when hoevered) use same as inactive for only text changes
+    x_position of the button
+    y_position of the button
+    action, this will be a callback function so do not use parentesis just import the function to use
+    (ex: start_game, in below function clicking the button will change game_state variable to intro which can
+    then be used to change th state of the game)
+    def start_game():
+        game_state = 'intro'
+    
+    screen window object to draw
+    getting screen width and height
+    setting a variable for clicked to False
+    creating a font object
+    getting some width and height"""
+    def __init__(self, text_size, text_to_draw, corner_radius, inactive_text_color, active_text_color, inactive_background_color,
+                active_background_color, x_pos, y_pos, action, screen_window):
+        self.font_name = FONT_NAME
+        self.text_size = int(text_size)
+        self.text_to_draw = text_to_draw
+        self.corner_radius = int(corner_radius)
+        self.active_text_color = active_text_color
+        self.inactive_text_color = inactive_text_color
+        self.inactive_background_color = inactive_background_color
+        self.active_background_color = active_background_color
+        self.x_pos = x_pos
+        self.y_pos = y_pos
+        self.action = action
+        self.screen_window = screen_window
+        self.screen_w = pygame.display.get_surface().get_width()
+        self.screen_h = pygame.display.get_surface().get_height()
+        self.clicked = False
+        self.font = pygame.font.SysFont(self.font_name, self.text_size, bold=True)
+        self.w, self.h = self.font.size(text_to_draw)
+
+
+    def make_inactive_text(self):
+        inactive_text = self.font.render(self.text_to_draw, True, self.inactive_text_color)
+        inactive_text_rect = inactive_text.get_rect(topleft=(self.x_pos, self.y_pos))
+        x, y, w, h = inactive_text_rect.x, inactive_text_rect.y, inactive_text_rect.w, inactive_text_rect.h-2
+        inactive_background = pygame.Rect(x,y,w,h)
+        return inactive_text, inactive_text_rect, inactive_background
+
+
+    def make_active_text(self):
+        active_text = self.font.render(self.text_to_draw, True, self.active_text_color)
+        active_text_rect = active_text.get_rect(topleft=(self.x_pos, self.y_pos))
+        x, y, w, h = active_text_rect.x, active_text_rect.y, active_text_rect.w, active_text_rect.h-2
+        active_background = pygame.Rect(x,y,w,h)
+        return active_text, active_text_rect, active_background
+
+
+    def render_inactive_and_active_text(self):
+        click = pygame.mouse.get_pressed()
+        inactive_text_surface, inactive_text_rectangle, inactive_background = self.make_inactive_text()
+        pygame.draw.rect(self.screen_window, self.inactive_background_color, inactive_background, 0, self.corner_radius)
+        self.screen_window.blit(inactive_text_surface, inactive_text_rectangle)
+        act_text_surface, act_text_rectangle, active_background = self.make_active_text()
+        if inactive_text_rectangle.collidepoint(pygame.mouse.get_pos()):
+            pygame.draw.rect(self.screen_window, self.active_background_color, active_background, 0, self.corner_radius)
+            self.screen_window.blit(act_text_surface, act_text_rectangle)
+            if click[0] == 1 and self.action != None and self.clicked == False:
+                self.clicked = True
+                self.action()
+
+
+class Checkbox():
+    def __init__(self, square_size, x_pos, y_pos, checkbox_color, checkbox_name, screen_window):
+        self.square_size = square_size
+        self.x_pos = x_pos
+        self.y_pos = y_pos
+        self.active_color = WHITE
+        self.checkbox_color = checkbox_color
+        self.screen_window = screen_window
+        self.clicked = False       
+        self.screen_w = pygame.display.get_surface().get_width()
+        self.screen_h = pygame.display.get_surface().get_height()
+        self.active = False
+        self.checkbox_name = 'checkbox' + str(checkbox_name)
+
+
+    def create_squares(self):
+        inactive_checkbox = pygame.Rect(self.x_pos, self.y_pos, self.square_size, self.square_size)
+        active_checkbox = pygame.Rect(int(self.x_pos+4), self.y_pos+4, self.square_size-8, self.square_size-8)
+        return inactive_checkbox, active_checkbox
+
+
+    def cleaning_clicked(self, click):
+        if click[0] == 0 and self.clicked == True:
+            self.clicked = False
+
+
+    def update_active_status(self):
+        click = pygame.mouse.get_pressed()
+        inactive_checkbox, _ = self.create_squares()
+        self.cleaning_clicked(click)
+        if inactive_checkbox.collidepoint(pygame.mouse.get_pos()):
+            if click[0] == 1 and self.active == False and self.clicked == False:
+                self.clicked = True
+                self.active = True
+            elif click[0] == 1 and self.active == True and self.clicked == False:
+                self.clicked = True
+                self.active = False
+
+
+    def render_active_inactive_checkbox(self):
+        inactive_checkbox, active_checkbox = self.create_squares()
+        pygame.draw.rect(self.screen_window, self.checkbox_color, inactive_checkbox)
+        if self.active:
+            pygame.draw.rect(self.screen_window, self.active_color, active_checkbox)
+
+
+class CheckboxBaseforMultiple():
+    def __init__(self, square_size, x_pos, y_pos, checkbox_color, checkbox_name, screen_window):
+        self.square_size = square_size
+        self.x_pos = x_pos
+        self.y_pos = y_pos
+        self.active_color = WHITE
+        self.checkbox_color = checkbox_color
+        self.screen_window = screen_window
+        self.clicked = False       
+        self.screen_w = pygame.display.get_surface().get_width()
+        self.screen_h = pygame.display.get_surface().get_height()
+        self.active = False
+        self.checkbox_name = 'checkbox' + str(checkbox_name)
+        self.inner_square_offset = int(square_size/6)
+        self.inner_offset = int(self.inner_square_offset*2)
+
+
+    def create_squares(self):
+        inactive_checkbox = pygame.Rect(self.x_pos, self.y_pos, self.square_size, self.square_size)
+        active_checkbox = pygame.Rect(self.x_pos+self.inner_square_offset, self.y_pos+self.inner_square_offset, self.square_size-self.inner_offset, self.square_size-self.inner_offset)
+        return inactive_checkbox, active_checkbox
+
+
+    def cleaning_clicked(self, click):
+        if click[0] == 0 and self.clicked == True:
+            self.clicked = False
+
+
+    def update_active_status(self):
+        click = pygame.mouse.get_pressed()
+        inactive_checkbox, _ = self.create_squares()
+        self.cleaning_clicked(click)
+        if inactive_checkbox.collidepoint(pygame.mouse.get_pos()):
+            if click[0] == 1 and self.active == False and self.clicked == False:
+                self.clicked = True
+                self.active = True                
+
+
+    def render_active_inactive_checkbox(self):
+        inactive_checkbox, active_checkbox = self.create_squares()
+        pygame.draw.rect(self.screen_window, self.checkbox_color, inactive_checkbox)
+        if self.active:
+            pygame.draw.rect(self.screen_window, self.active_color, active_checkbox)
+
+
+class OneSelectionMultipleCheckboxes():
+    def __init__(self, square_size, x_pos, y_pos, x_offset, checkbox_color, qty_checkboxes, checkbox_group_name, screen_window):
+        self.square_size = square_size
+        self.x_pos = x_pos
+        self.y_pos = y_pos
+        self.active_color = RED
+        self.checkbox_color = checkbox_color
+        self.qty_checkboxes = int(qty_checkboxes)
+        self.checkbox_group_name = checkbox_group_name
+        self.screen_window = screen_window
+        self.screen_w = pygame.display.get_surface().get_width()
+        self.screen_h = pygame.display.get_surface().get_height()
+        self.checkboxes_object = {}
+        self.x_offset = x_offset
+        self.checkbox_name = 'checkbox'
+        self.created_checkboxes = {}
+
+        if self.square_size > self.x_offset:
+            self.x_offset = self.square_size+10
+
+
+    def create_checkboxes(self):
+        for i in range(self.qty_checkboxes):
+            checkbox_name = self.checkbox_name + str(i)
+            if i == 0:
+                checkbox_object = CheckboxBaseforMultiple(self.square_size, self.x_pos, self.y_pos, self.checkbox_color, i, self.screen_window)
+                checkbox_object.active = True
+                self.created_checkboxes[checkbox_name] = {}
+                self.created_checkboxes[checkbox_name]['Checkbox'] = checkbox_object
+                self.created_checkboxes[checkbox_name]['Active'] = checkbox_object.active
+            else:
+                checkbox_object = CheckboxBaseforMultiple(self.square_size, self.x_pos+self.x_offset*i, self.y_pos, self.checkbox_color, i, self.screen_window)
+                self.created_checkboxes[checkbox_name] = {}
+                self.created_checkboxes[checkbox_name]['Checkbox'] = checkbox_object
+                self.created_checkboxes[checkbox_name]['Active'] = checkbox_object.active
+
+
+    def render_checkboxes(self):
+        for box in self.created_checkboxes:
+            self.created_checkboxes[box]['Checkbox'].render_active_inactive_checkbox()
+
+    def update_checkboxes(self):
+        for box in self.created_checkboxes:
+            self.created_checkboxes[box]['Checkbox'].update_active_status()
+            if self.created_checkboxes[box]['Checkbox'].active:
+                for b in self.created_checkboxes:
+                    if b != box:
+                        self.created_checkboxes[b]['Active'] = False
+                        self.created_checkboxes[b]['Checkbox'].active = False
+
+#Example of implementation
+#input_box = InputBox(100, 200, 500, 100, PURPLE, GREEN, 'calibri', True, screen)
+#In handler event loop = input_box.handle_event(event)
+#outside event handler in game loop input_box.draw() & input_box.update()
+
+class InputBox:
+    def __init__(self, x_pos, y_pos, width, height, text_color, outline_box_color, bold_text, screen):
+        self.x_pos = x_pos
+        self.y_pos = y_pos
+        self.width = width
+        self.height = height
+        self.text_color = text_color
+        self.outline_box_color = outline_box_color
+        self.font_name = FONT_NAME
+        self.text_size = int(self.height * 0.80)
+        self.bold_text = bold_text
+        self.screen = screen
+        self.active = False
+        self.score = 1
+        self.text = ''
+        self.font = pygame.font.SysFont(self.font_name, self.text_size, self.bold_text)
+        self.rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height)
+        self.txt_surface = self.font.render(self.text, True, self.text_color)
+        self.txt_rect = self.txt_surface.get_rect()        
+        self.cursor = pygame.Rect(self.txt_rect.topright, (3, self.txt_rect.height + 2))
+        self.leftover = 0
+        self.ignore_keys = [pygame.K_LSHIFT, pygame.K_RSHIFT, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LCTRL, pygame.K_RCTRL, pygame.K_LALT, pygame.K_RALT]
+
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.rect.collidepoint(event.pos):
+                self.active = True
+            else:
+                self.active = False
+        if event.type == pygame.KEYDOWN:
+            if self.active:
+                if event.key == pygame.K_RETURN:
+                    self.leftover += self.score
+                    self.score = 0
+                    self.text = ''
+                    self.active = False
+                    return self.text
+                elif event.key == pygame.K_BACKSPACE:
+                    self.text = self.text[:-1]
+                elif event.key in self.ignore_keys:
+                    pass
+                else:
+                    self.text += event.unicode
+                    self.txt_rect.size = self.txt_surface.get_size()
+                    self.cursor.topleft = self.txt_rect.topright
+                    if self.txt_surface.get_width() > self.rect.w - self.rect.w * 0.10:
+                        self.text = self.text[:-1]
+
+
+
+    def draw(self):
+        self.screen.blit(self.txt_surface, (self.rect.x + 5, self.rect.y + self.height * 0.15))
+        pygame.draw.rect(self.screen, self.outline_box_color, self.rect, 1)
+        if self.active:
+            if time.time() % 1 > 0.5:
+                text_rect = self.txt_surface.get_rect(topleft = (self.rect.x + 5, self.rect.y + 10))
+                self.cursor.midleft = text_rect.midright
+                pygame.draw.rect(self.screen, self.text_color, self.cursor)
+
+
+
+    def update(self):
+        self.txt_surface = self.font.render(self.text, True, self.text_color)
